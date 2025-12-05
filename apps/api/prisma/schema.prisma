@@ -1,0 +1,307 @@
+// Enso Database Schema
+// Using PostgreSQL with Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User & Authentication
+// ============================================
+
+model User {
+  id                   String    @id @default(uuid())
+  email                String    @unique
+  passwordHash         String
+  displayName          String
+  avatarUrl            String?
+  timezone             String    @default("UTC")
+  subscription         Subscription @default(FREE)
+  onboardingCompleted  Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Relations
+  preferences          UserPreferences?
+  maslowProfile        MaslowProfile?
+  journalEntries       JournalEntry[]
+  commitments          Commitment[]
+  sessions             Session[]
+
+  @@index([email])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  token        String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model UserPreferences {
+  id                   String       @id @default(uuid())
+  userId               String       @unique
+  theme                Theme        @default(SYSTEM)
+  notificationsEnabled Boolean      @default(true)
+  dailyReminderTime    String?      // HH:mm format
+  weeklyReviewDay      Int?         // 0-6 (Sunday-Saturday)
+  aiPersonality        AIPersonality @default(BALANCED)
+  shareAnonymousData   Boolean      @default(false)
+  allowAILearning      Boolean      @default(true)
+  dataRetentionDays    Int          @default(365)
+  focusAreas           MaslowLevel[]
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// Maslow's Hierarchy
+// ============================================
+
+model MaslowProfile {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  physiological         Float    @default(50)
+  safety                Float    @default(50)
+  loveBelonging         Float    @default(50)
+  esteem                Float    @default(50)
+  selfActualization     Float    @default(50)
+  lastUpdated           DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history               MaslowSnapshot[]
+}
+
+model MaslowSnapshot {
+  id                    String       @id @default(uuid())
+  profileId             String
+  physiological         Float
+  safety                Float
+  loveBelonging         Float
+  esteem                Float
+  selfActualization     Float
+  trigger               SnapshotTrigger
+  timestamp             DateTime     @default(now())
+
+  profile               MaslowProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, timestamp])
+}
+
+// ============================================
+// Journal Entries
+// ============================================
+
+model JournalEntry {
+  id                    String           @id @default(uuid())
+  userId                String
+  type                  JournalEntryType @default(FREE_WRITE)
+  title                 String?
+  content               String
+  promptId              String?
+  mood                  Int              // 1-10 scale
+  energy                Int              // 1-10 scale
+  tags                  String[]
+  wordCount             Int              @default(0)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt                JournalPrompt?   @relation(fields: [promptId], references: [id])
+  analysis              JournalAnalysis?
+  aiMessages            AIMessage[]
+  linkedCommitments     CommitmentEntry[]
+
+  @@index([userId, createdAt])
+  @@index([userId, type])
+}
+
+model JournalPrompt {
+  id           String       @id @default(uuid())
+  text         String
+  category     String
+  maslowLevel  MaslowLevel?
+  difficulty   Difficulty   @default(MEDIUM)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+
+  entries      JournalEntry[]
+
+  @@index([category])
+  @@index([maslowLevel])
+}
+
+model JournalAnalysis {
+  id                    String       @id @default(uuid())
+  entryId               String       @unique
+  sentimentScore        Float        // -1 to 1
+  emotionalTones        Json         // Array of { emotion, intensity }
+  maslowImpacts         Json         // Record<MaslowLevel, number>
+  extractedThemes       String[]
+  suggestedCommitments  String[]
+  insightSummary        String
+  riskIndicators        Json?        // Array of risk indicators
+  createdAt             DateTime     @default(now())
+
+  entry                 JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+}
+
+model AIMessage {
+  id           String       @id @default(uuid())
+  entryId      String
+  role         MessageRole
+  content      String
+  metadata     Json?
+  timestamp    DateTime     @default(now())
+
+  entry        JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@index([entryId, timestamp])
+}
+
+// ============================================
+// Commitments
+// ============================================
+
+model Commitment {
+  id                    String             @id @default(uuid())
+  userId                String
+  title                 String
+  description           String             @default("")
+  maslowLevel           MaslowLevel
+  category              String
+  status                CommitmentStatus   @default(ACTIVE)
+  frequency             CommitmentFrequency
+  customFrequencyDays   Int?
+  startDate             DateTime           @default(now())
+  endDate               DateTime?
+  targetCount           Int?
+  currentCount          Int                @default(0)
+  successProbability    Float              @default(0.5)
+  confidenceLower       Float              @default(0.3)
+  confidenceUpper       Float              @default(0.7)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkIns              CommitmentCheckIn[]
+  linkedEntries         CommitmentEntry[]
+
+  @@index([userId, status])
+  @@index([userId, maslowLevel])
+}
+
+model CommitmentCheckIn {
+  id             String       @id @default(uuid())
+  commitmentId   String
+  completed      Boolean
+  notes          String?
+  mood           Int?         // 1-5 scale
+  difficulty     Int?         // 1-5 scale
+  contextFactors Json?        // Array of { type, value }
+  timestamp      DateTime     @default(now())
+
+  commitment     Commitment   @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+
+  @@index([commitmentId, timestamp])
+}
+
+model CommitmentEntry {
+  id             String       @id @default(uuid())
+  commitmentId   String
+  entryId        String
+
+  commitment     Commitment   @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+  entry          JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@unique([commitmentId, entryId])
+}
+
+// ============================================
+// Enums
+// ============================================
+
+enum Subscription {
+  FREE
+  PREMIUM
+  PRO
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum AIPersonality {
+  SUPPORTIVE
+  COACH
+  CURIOUS
+  BALANCED
+}
+
+enum MaslowLevel {
+  PHYSIOLOGICAL
+  SAFETY
+  LOVE_BELONGING
+  ESTEEM
+  SELF_ACTUALIZATION
+}
+
+enum SnapshotTrigger {
+  JOURNAL_ENTRY
+  COMMITMENT_UPDATE
+  MANUAL
+  AI_ANALYSIS
+}
+
+enum JournalEntryType {
+  FREE_WRITE
+  PROMPTED
+  REFLECTION
+  GRATITUDE
+  GOAL_SETTING
+  CHECK_IN
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  DEEP
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+enum CommitmentStatus {
+  ACTIVE
+  COMPLETED
+  FAILED
+  PAUSED
+  ABANDONED
+}
+
+enum CommitmentFrequency {
+  ONCE
+  DAILY
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}

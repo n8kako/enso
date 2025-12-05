@@ -1,0 +1,24 @@
+{
+  "name": "enso",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Intelligent journaling SaaS with Bayesian commitment prediction",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "mobile": "npm run dev --workspace=@enso/mobile",
+    "api": "npm run dev --workspace=@enso/api",
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Enso Team",
+  "license": "UNLICENSED"
+}
