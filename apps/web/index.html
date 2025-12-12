@@ -1,0 +1,2387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Enso - Intelligent Journaling</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --primary: #5b78f5;
+      --primary-dark: #4a5ce8;
+      --bg-dark: #1a1a2e;
+      --bg-card: #16162a;
+      --bg-input: #252542;
+      --text-primary: #ffffff;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent-purple: #BA68C8;
+      --accent-green: #81C784;
+      --accent-orange: #f59e0b;
+      --accent-red: #E57373;
+      --maslow-physiological: #E57373;
+      --maslow-safety: #FFB74D;
+      --maslow-love: #81C784;
+      --maslow-esteem: #64B5F6;
+      --maslow-actualization: #BA68C8;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* App Container */
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: var(--bg-dark);
+      z-index: 100;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .header-date {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .streak-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(245, 158, 11, 0.15);
+      padding: 6px 12px;
+      border-radius: 20px;
+      color: var(--accent-orange);
+      font-weight: 600;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 0 20px 100px;
+      overflow-y: auto;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    /* Journal Button */
+    .journal-button {
+      background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+
+    .journal-button:hover {
+      opacity: 0.9;
+    }
+
+    .journal-button:active {
+      transform: scale(0.98);
+    }
+
+    .journal-button span {
+      flex: 1;
+      color: rgba(255,255,255,0.9);
+      font-size: 16px;
+    }
+
+    /* Maslow Pyramid */
+    .pyramid-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .pyramid-row {
+      display: flex;
+      justify-content: center;
+    }
+
+    .pyramid-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: capitalize;
+      transition: opacity 0.3s;
+    }
+
+    .pyramid-bar span:last-child {
+      font-weight: 600;
+    }
+
+    /* Wellbeing Score */
+    .wellbeing-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .wellbeing-score {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* Commitments */
+    .commitment-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 0;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      cursor: pointer;
+    }
+
+    .commitment-item:last-child {
+      border-bottom: none;
+    }
+
+    .checkbox {
+      width: 24px;
+      height: 24px;
+      border-radius: 12px;
+      border: 2px solid var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .checkbox.checked {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+    }
+
+    .checkbox svg {
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .checkbox.checked svg {
+      opacity: 1;
+    }
+
+    .commitment-title {
+      flex: 1;
+      font-size: 15px;
+    }
+
+    .commitment-title.completed {
+      color: var(--text-muted);
+      text-decoration: line-through;
+    }
+
+    /* AI Insight */
+    .insight-card {
+      background: linear-gradient(135deg, rgba(91, 120, 245, 0.15), rgba(186, 104, 200, 0.15));
+      border: 1px solid rgba(186, 104, 200, 0.2);
+    }
+
+    .insight-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      color: var(--accent-purple);
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .insight-text {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border-top: 1px solid rgba(255,255,255,0.05);
+      display: flex;
+      justify-content: space-around;
+      padding: 12px 0 24px;
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-muted);
+      font-size: 11px;
+      cursor: pointer;
+      transition: color 0.2s;
+      padding: 8px 16px;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+    }
+
+    .nav-item svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* Screens */
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    /* Journal Entry Screen */
+    .journal-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg-dark);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+    }
+
+    .journal-screen.active {
+      display: flex;
+    }
+
+    .journal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .journal-header button {
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 8px;
+    }
+
+    .journal-header .save-btn {
+      background: var(--primary);
+      border-radius: 16px;
+      padding: 8px 16px;
+      font-weight: 600;
+    }
+
+    .journal-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .journal-date {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    /* Mood Selector */
+    .mood-container {
+      margin-bottom: 24px;
+    }
+
+    .mood-label {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .mood-scale {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .mood-item {
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 20px;
+      opacity: 0.4;
+    }
+
+    .mood-item.selected {
+      opacity: 1;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .mood-value {
+      text-align: center;
+      color: var(--primary);
+      font-weight: 500;
+      margin-top: 12px;
+      font-size: 14px;
+      min-height: 20px;
+    }
+
+    /* Energy Bar */
+    .energy-container {
+      margin-bottom: 24px;
+    }
+
+    .energy-label {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .energy-bar {
+      display: flex;
+      gap: 4px;
+    }
+
+    .energy-segment {
+      flex: 1;
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .energy-segment.active {
+      background: var(--accent-orange);
+    }
+
+    /* Journal Textarea */
+    .journal-input-container {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .journal-textarea {
+      width: 100%;
+      min-height: 200px;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 16px;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+    }
+
+    .journal-textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* Start Button */
+    .start-journal-btn {
+      background: linear-gradient(90deg, var(--primary), var(--accent-purple));
+      border: none;
+      border-radius: 16px;
+      padding: 16px;
+      width: 100%;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.2s;
+    }
+
+    .start-journal-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* AI Chat */
+    .chat-container {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .chat-container.active {
+      display: flex;
+    }
+
+    .mood-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.05);
+      padding: 8px 16px;
+      border-radius: 20px;
+      margin: 0 auto 20px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .mood-indicator span:first-child {
+      font-size: 20px;
+    }
+
+    .message {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 20px;
+      font-size: 15px;
+      line-height: 1.5;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      background: var(--primary);
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+      margin-left: auto;
+    }
+
+    .message.ai {
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      border-bottom-left-radius: 4px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .ai-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 16px;
+      background: rgba(186, 104, 200, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 8px 0;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 4px;
+      background: var(--accent-purple);
+      animation: typing 1s infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes typing {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* Reply Input */
+    .reply-container {
+      display: none;
+      padding: 12px 20px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      gap: 12px;
+      align-items: flex-end;
+      background: var(--bg-dark);
+    }
+
+    .reply-container.active {
+      display: flex;
+    }
+
+    .reply-input {
+      flex: 1;
+      background: var(--bg-card);
+      border: none;
+      border-radius: 20px;
+      padding: 12px 16px;
+      color: var(--text-primary);
+      font-size: 15px;
+      outline: none;
+      max-height: 100px;
+      resize: none;
+    }
+
+    .reply-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 22px;
+      background: var(--primary);
+      border: none;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s;
+    }
+
+    .send-btn:disabled {
+      background: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    /* Entry Form (initial) */
+    .entry-form {
+      display: block;
+    }
+
+    .entry-form.hidden {
+      display: none;
+    }
+
+    /* Journal List */
+    .journal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .journal-entry-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 16px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .journal-entry-card:active {
+      transform: scale(0.98);
+    }
+
+    .entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .entry-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .entry-mood-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 4px;
+    }
+
+    .entry-date {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .entry-preview {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .entry-tags {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .entry-tag {
+      background: rgba(91, 120, 245, 0.15);
+      color: var(--primary);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    /* Prompt chips */
+    .prompts-container {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 16px;
+      margin-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .prompts-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .prompt-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 10px 16px;
+      border-radius: 20px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .prompt-chip:hover {
+      background: var(--bg-input);
+    }
+
+    .prompt-chip span:last-child {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Commitments Screen */
+    .stats-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .commitment-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .commitment-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .commitment-info {
+      flex: 1;
+    }
+
+    .commitment-info h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .commitment-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .level-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: capitalize;
+    }
+
+    .frequency-text {
+      color: var(--text-muted);
+      font-size: 12px;
+      text-transform: capitalize;
+    }
+
+    .streak-tag {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(245, 158, 11, 0.15);
+      padding: 6px 10px;
+      border-radius: 12px;
+      color: var(--accent-orange);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .progress-container {
+      display: flex;
+      align-items: center;
+      margin-top: 14px;
+      gap: 10px;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+
+    .progress-text {
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      min-width: 45px;
+      text-align: right;
+    }
+
+    .probability-container {
+      display: flex;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      gap: 10px;
+    }
+
+    .probability-label {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .probability-bar {
+      flex: 1;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .probability-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+
+    .probability-value {
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 600;
+      min-width: 35px;
+      text-align: right;
+    }
+
+    /* Add commitment button */
+    .add-btn {
+      position: fixed;
+      bottom: 100px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 28px;
+      background: var(--primary);
+      border: none;
+      color: white;
+      font-size: 28px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(91, 120, 245, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+
+    /* Insights Screen */
+    .mood-chart {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      height: 140px;
+      padding-bottom: 24px;
+    }
+
+    .chart-bar-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-bar-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .chart-bar {
+      width: 24px;
+      border-radius: 6px;
+      transition: height 0.5s;
+    }
+
+    .chart-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .chart-label.active {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .chart-legend {
+      display: flex;
+      justify-content: space-between;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .legend-text {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .trend-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .trend-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .trend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 5px;
+    }
+
+    .trend-label {
+      flex: 1;
+      color: var(--text-secondary);
+      font-size: 14px;
+      text-transform: capitalize;
+    }
+
+    .trend-score {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .score-value {
+      font-size: 16px;
+      font-weight: 600;
+      min-width: 30px;
+      text-align: right;
+    }
+
+    .change-indicator {
+      display: flex;
+      align-items: center;
+      padding: 2px 6px;
+      border-radius: 6px;
+      gap: 2px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .change-indicator.positive {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+    }
+
+    .change-indicator.negative {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    /* Profile Screen */
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      background: var(--bg-card);
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+
+    .avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 30px;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-name {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .user-email {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-top: 2px;
+    }
+
+    .settings-section {
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .settings-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .settings-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      cursor: pointer;
+    }
+
+    .settings-item:last-child {
+      border-bottom: none;
+    }
+
+    .settings-item-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .settings-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(91, 120, 245, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+    }
+
+    .settings-label {
+      font-size: 15px;
+    }
+
+    .settings-value {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Toggle Switch */
+    .toggle {
+      width: 50px;
+      height: 28px;
+      background: var(--text-muted);
+      border-radius: 14px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .toggle.active {
+      background: var(--primary);
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background: white;
+      border-radius: 12px;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.3s;
+    }
+
+    .toggle.active::after {
+      transform: translateX(22px);
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: var(--text-primary);
+      font-size: 16px;
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: var(--primary);
+    }
+
+    .form-select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: var(--text-primary);
+      font-size: 16px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+
+    .modal-btn.cancel {
+      background: rgba(255,255,255,0.1);
+      color: var(--text-primary);
+    }
+
+    .modal-btn.confirm {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--bg-card);
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      z-index: 400;
+      opacity: 0;
+      transition: all 0.3s;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Home Screen -->
+    <div id="home-screen" class="screen active">
+      <header class="header">
+        <div>
+          <h1>Welcome back</h1>
+          <p class="header-date" id="current-date"></p>
+        </div>
+        <div class="streak-badge">
+          <span>🔥</span>
+          <span id="streak-count">0</span>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <!-- Journal Button -->
+        <div class="journal-button" onclick="openJournalScreen()">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <span>Start journaling...</span>
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" opacity="0.7">
+            <path d="M9 18l6-6-6-6"></path>
+          </svg>
+        </div>
+
+        <!-- Wellbeing Card -->
+        <div class="card">
+          <div class="wellbeing-header">
+            <h2 class="card-title">Wellbeing Score</h2>
+            <span class="wellbeing-score" id="wellbeing-score">72</span>
+          </div>
+          <div class="pyramid-container" id="maslow-pyramid"></div>
+        </div>
+
+        <!-- Today's Commitments -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 class="card-title" style="margin-bottom: 0;">Today's Commitments</h2>
+            <span style="color: var(--primary); font-size: 14px; cursor: pointer;" onclick="switchTab('commitments')">See all</span>
+          </div>
+          <div id="today-commitments"></div>
+        </div>
+
+        <!-- AI Insight -->
+        <div class="card insight-card">
+          <div class="insight-header">
+            <span>✨</span>
+            <span>AI Insight</span>
+          </div>
+          <p class="insight-text" id="ai-insight"></p>
+        </div>
+      </main>
+    </div>
+
+    <!-- Journal List Screen -->
+    <div id="journal-screen" class="screen">
+      <header class="header">
+        <h1>Journal</h1>
+        <button onclick="openJournalScreen()" style="background: var(--primary); border: none; width: 44px; height: 44px; border-radius: 22px; color: white; font-size: 24px; cursor: pointer;">+</button>
+      </header>
+      <main class="main-content">
+        <div class="prompts-container">
+          <div class="prompt-chip" onclick="openJournalScreen('gratitude')">
+            <span>🙏</span>
+            <span>Gratitude</span>
+          </div>
+          <div class="prompt-chip" onclick="openJournalScreen('goals')">
+            <span>🎯</span>
+            <span>Goals</span>
+          </div>
+          <div class="prompt-chip" onclick="openJournalScreen('reflection')">
+            <span>💭</span>
+            <span>Reflection</span>
+          </div>
+          <div class="prompt-chip" onclick="openJournalScreen()">
+            <span>📝</span>
+            <span>Free write</span>
+          </div>
+        </div>
+        <div class="journal-list" id="journal-list"></div>
+      </main>
+    </div>
+
+    <!-- Commitments Screen -->
+    <div id="commitments-screen" class="screen">
+      <header class="header">
+        <div>
+          <h1>Commitments</h1>
+          <p class="header-date" id="commitment-subtitle"></p>
+        </div>
+      </header>
+      <main class="main-content">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value" id="active-count">0</div>
+            <div class="stat-label">Active</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value"><span style="color: var(--accent-orange);">🔥</span> <span id="best-streak">0</span></div>
+            <div class="stat-label">Best Streak</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="avg-success">0%</div>
+            <div class="stat-label">Avg. Success</div>
+          </div>
+        </div>
+        <div id="commitment-list"></div>
+      </main>
+      <button class="add-btn" onclick="openCommitmentModal()">+</button>
+    </div>
+
+    <!-- Insights Screen -->
+    <div id="insights-screen" class="screen">
+      <header class="header">
+        <div>
+          <h1>Insights</h1>
+          <p class="header-date">Your personal growth analytics</p>
+        </div>
+      </header>
+      <main class="main-content">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 class="card-title" style="margin-bottom: 0;">Mood This Week</h2>
+            <div style="display: flex; align-items: center; gap: 6px; background: rgba(34, 197, 94, 0.15); padding: 6px 12px; border-radius: 12px;">
+              <span>😊</span>
+              <span style="color: #22c55e; font-weight: 500; font-size: 14px;">Good</span>
+            </div>
+          </div>
+          <div class="mood-chart" id="mood-chart"></div>
+          <div class="chart-legend">
+            <span class="legend-text" id="mood-avg">Average: 0</span>
+            <span class="legend-text" id="mood-change">↑ 0% from last week</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="card-title">Maslow Trends</h2>
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: -12px; margin-bottom: 16px;">Last 30 days</p>
+          <div class="trend-list" id="trend-list"></div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Profile Screen -->
+    <div id="profile-screen" class="screen">
+      <header class="header">
+        <h1>Profile</h1>
+      </header>
+      <main class="main-content">
+        <div class="user-card">
+          <div class="avatar">U</div>
+          <div class="user-info">
+            <div class="user-name" id="user-name">User</div>
+            <div class="user-email">enso@journal.app</div>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value" id="total-entries">0</div>
+            <div class="stat-label">Entries</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="profile-streak">0</div>
+            <div class="stat-label">Day Streak</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="profile-success">0%</div>
+            <div class="stat-label">Success Rate</div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="section-title">AI Companion</h3>
+          <div class="settings-card">
+            <div class="settings-item" onclick="changePersonality()">
+              <div class="settings-item-left">
+                <div class="settings-icon">💬</div>
+                <span class="settings-label">AI Personality</span>
+              </div>
+              <span class="settings-value" id="ai-personality">Balanced</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="section-title">Preferences</h3>
+          <div class="settings-card">
+            <div class="settings-item">
+              <div class="settings-item-left">
+                <div class="settings-icon">🔔</div>
+                <span class="settings-label">Notifications</span>
+              </div>
+              <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div class="settings-item">
+              <div class="settings-item-left">
+                <div class="settings-icon">🌙</div>
+                <span class="settings-label">Dark Mode</span>
+              </div>
+              <div class="toggle active"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="section-title">Data</h3>
+          <div class="settings-card">
+            <div class="settings-item" onclick="exportData()">
+              <div class="settings-item-left">
+                <div class="settings-icon">📤</div>
+                <span class="settings-label">Export Data</span>
+              </div>
+              <span class="settings-value">→</span>
+            </div>
+            <div class="settings-item" onclick="clearAllData()">
+              <div class="settings-item-left">
+                <div class="settings-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">🗑️</div>
+                <span class="settings-label" style="color: #ef4444;">Clear All Data</span>
+              </div>
+              <span class="settings-value">→</span>
+            </div>
+          </div>
+        </div>
+
+        <p style="text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 24px;">Enso v0.1.0</p>
+      </main>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <div class="nav-item active" data-tab="home" onclick="switchTab('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        <span>Home</span>
+      </div>
+      <div class="nav-item" data-tab="journal" onclick="switchTab('journal')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 016.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"></path>
+        </svg>
+        <span>Journal</span>
+      </div>
+      <div class="nav-item" data-tab="commitments" onclick="switchTab('commitments')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>Commitments</span>
+      </div>
+      <div class="nav-item" data-tab="insights" onclick="switchTab('insights')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <span>Insights</span>
+      </div>
+      <div class="nav-item" data-tab="profile" onclick="switchTab('profile')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>Profile</span>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Journal Entry Screen -->
+  <div class="journal-screen" id="journal-entry-screen">
+    <div class="journal-header">
+      <button onclick="closeJournalScreen()">✕</button>
+      <span id="journal-title">New Entry</span>
+      <button class="save-btn" onclick="saveJournalEntry()">Save</button>
+    </div>
+    <div class="journal-content">
+      <p class="journal-date" id="journal-date"></p>
+
+      <!-- Entry Form -->
+      <div class="entry-form" id="entry-form">
+        <div class="mood-container">
+          <p class="mood-label">How are you feeling?</p>
+          <div class="mood-scale" id="mood-scale"></div>
+          <p class="mood-value" id="mood-value"></p>
+        </div>
+
+        <div class="energy-container">
+          <p class="energy-label">Energy level: <span id="energy-value">5</span>/10</p>
+          <div class="energy-bar" id="energy-bar"></div>
+        </div>
+
+        <div class="journal-input-container">
+          <textarea class="journal-textarea" id="journal-input" placeholder="What's on your mind today..."></textarea>
+        </div>
+
+        <button class="start-journal-btn" id="start-btn" onclick="startAIConversation()" disabled>
+          Start Journaling with AI
+          <span>✨</span>
+        </button>
+      </div>
+
+      <!-- AI Chat -->
+      <div class="chat-container" id="chat-container">
+        <div class="mood-indicator" id="chat-mood-indicator"></div>
+        <div id="chat-messages"></div>
+      </div>
+    </div>
+    <div class="reply-container" id="reply-container">
+      <textarea class="reply-input" id="reply-input" placeholder="Continue the conversation..." rows="1"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendReply()" disabled>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Add Commitment Modal -->
+  <div class="modal" id="commitment-modal">
+    <div class="modal-content">
+      <h2 class="modal-title">New Commitment</h2>
+      <div class="form-group">
+        <label class="form-label">Title</label>
+        <input type="text" class="form-input" id="commitment-title" placeholder="e.g., Morning meditation">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Maslow Level</label>
+        <select class="form-select" id="commitment-level">
+          <option value="physiological">Physiological (Health, Sleep)</option>
+          <option value="safety">Safety (Finances, Stability)</option>
+          <option value="love_belonging">Love & Belonging (Relationships)</option>
+          <option value="esteem">Esteem (Achievement, Confidence)</option>
+          <option value="self_actualization">Self-Actualization (Growth, Purpose)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Frequency</label>
+        <select class="form-select" id="commitment-frequency">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn cancel" onclick="closeCommitmentModal()">Cancel</button>
+        <button class="modal-btn confirm" onclick="addCommitment()">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ============================================
+    // Data Store (Local Storage)
+    // ============================================
+
+    const STORAGE_KEY = 'enso_data';
+
+    const defaultData = {
+      user: {
+        name: 'User',
+        streak: 0,
+        lastJournalDate: null,
+        aiPersonality: 'balanced'
+      },
+      maslow: {
+        physiological: 65,
+        safety: 58,
+        love_belonging: 45,
+        esteem: 60,
+        self_actualization: 50
+      },
+      entries: [],
+      commitments: [],
+      moodHistory: []
+    };
+
+    function getData() {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+      return { ...defaultData };
+    }
+
+    function saveData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    // ============================================
+    // Mood and Energy
+    // ============================================
+
+    const moodEmojis = ['😢', '😔', '😕', '😐', '🙂', '😊', '😄', '😁', '🤩', '🥳'];
+    const moodLabels = ['Terrible', 'Bad', 'Poor', 'Okay', 'Fair', 'Good', 'Great', 'Amazing', 'Fantastic', 'Perfect'];
+    const moodColors = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9'];
+
+    let currentMood = 0;
+    let currentEnergy = 5;
+
+    function initMoodScale() {
+      const scale = document.getElementById('mood-scale');
+      scale.innerHTML = moodEmojis.map((emoji, i) =>
+        `<div class="mood-item" onclick="selectMood(${i + 1})">${emoji}</div>`
+      ).join('');
+    }
+
+    function selectMood(value) {
+      currentMood = value;
+      document.querySelectorAll('.mood-item').forEach((el, i) => {
+        el.classList.toggle('selected', i === value - 1);
+      });
+      document.getElementById('mood-value').textContent = moodLabels[value - 1];
+      updateStartButton();
+    }
+
+    function initEnergyBar() {
+      const bar = document.getElementById('energy-bar');
+      bar.innerHTML = Array.from({length: 10}, (_, i) =>
+        `<div class="energy-segment ${i < 5 ? 'active' : ''}" onclick="selectEnergy(${i + 1})"></div>`
+      ).join('');
+    }
+
+    function selectEnergy(value) {
+      currentEnergy = value;
+      document.getElementById('energy-value').textContent = value;
+      document.querySelectorAll('.energy-segment').forEach((el, i) => {
+        el.classList.toggle('active', i < value);
+      });
+    }
+
+    function updateStartButton() {
+      const content = document.getElementById('journal-input').value.trim();
+      const btn = document.getElementById('start-btn');
+      btn.disabled = !content || currentMood === 0;
+    }
+
+    // ============================================
+    // AI Responses
+    // ============================================
+
+    const aiResponses = [
+      "It sounds like you're experiencing something meaningful. What stands out most to you about this?",
+      "Thank you for sharing that. I notice there's a lot going on. Which part feels most important to explore?",
+      "That's a thoughtful reflection. How does acknowledging this make you feel?",
+      "I appreciate you opening up. What would help you feel more at peace with this?",
+      "It takes courage to journal about these feelings. What small step could support you right now?",
+      "I hear you. Sometimes just naming what we're experiencing can bring clarity. Is there more you'd like to explore?",
+      "That's an interesting observation about yourself. Have you noticed this pattern before?",
+      "What you're describing sounds significant. How might this connect to what matters most to you?"
+    ];
+
+    const insights = [
+      "Your Love & Belonging score has been lower lately. Consider reaching out to a friend today - even a quick message can strengthen connections.",
+      "You've been consistent with your morning routine! This stability in Physiological needs creates a foundation for growth in other areas.",
+      "Based on your recent entries, focusing on small wins in the Esteem category could boost your overall wellbeing.",
+      "Your journaling streak is building momentum. Consistency in self-reflection strengthens all levels of your hierarchy.",
+      "Consider a commitment related to Safety - financial planning or creating stability can reduce underlying stress."
+    ];
+
+    function getRandomResponse() {
+      return aiResponses[Math.floor(Math.random() * aiResponses.length)];
+    }
+
+    function getRandomInsight() {
+      return insights[Math.floor(Math.random() * insights.length)];
+    }
+
+    // ============================================
+    // Journal Functions
+    // ============================================
+
+    let chatMessages = [];
+
+    function openJournalScreen(prompt) {
+      document.getElementById('journal-entry-screen').classList.add('active');
+      document.getElementById('journal-date').textContent = new Date().toLocaleDateString('en-US', {
+        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+      });
+
+      // Reset state
+      currentMood = 0;
+      currentEnergy = 5;
+      chatMessages = [];
+      document.getElementById('journal-input').value = '';
+      document.getElementById('entry-form').classList.remove('hidden');
+      document.getElementById('chat-container').classList.remove('active');
+      document.getElementById('reply-container').classList.remove('active');
+      document.getElementById('chat-messages').innerHTML = '';
+      document.getElementById('journal-title').textContent = 'New Entry';
+
+      initMoodScale();
+      initEnergyBar();
+      updateStartButton();
+
+      // Add prompt text if provided
+      if (prompt) {
+        const prompts = {
+          gratitude: "Today I'm grateful for...",
+          goals: "My goals for today are...",
+          reflection: "Looking back on today, I notice..."
+        };
+        document.getElementById('journal-input').value = prompts[prompt] || '';
+        updateStartButton();
+      }
+    }
+
+    function closeJournalScreen() {
+      document.getElementById('journal-entry-screen').classList.remove('active');
+    }
+
+    function startAIConversation() {
+      const content = document.getElementById('journal-input').value.trim();
+      if (!content || currentMood === 0) return;
+
+      // Hide form, show chat
+      document.getElementById('entry-form').classList.add('hidden');
+      document.getElementById('chat-container').classList.add('active');
+      document.getElementById('reply-container').classList.add('active');
+      document.getElementById('journal-title').textContent = 'Journaling';
+
+      // Set mood indicator
+      document.getElementById('chat-mood-indicator').innerHTML =
+        `<span>${moodEmojis[currentMood - 1]}</span><span>${moodLabels[currentMood - 1]}</span>`;
+
+      // Add user message
+      addMessage('user', content);
+
+      // Show typing indicator then AI response
+      showTyping();
+      setTimeout(() => {
+        hideTyping();
+        addMessage('ai', getRandomResponse());
+      }, 1500);
+    }
+
+    function addMessage(role, content) {
+      chatMessages.push({ role, content, timestamp: new Date() });
+      const container = document.getElementById('chat-messages');
+
+      if (role === 'user') {
+        container.innerHTML += `<div class="message user">${escapeHtml(content)}</div>`;
+      } else {
+        container.innerHTML += `
+          <div class="message ai">
+            <div class="ai-avatar">✨</div>
+            <div>${escapeHtml(content)}</div>
+          </div>`;
+      }
+
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function showTyping() {
+      const container = document.getElementById('chat-messages');
+      container.innerHTML += `
+        <div class="message ai" id="typing-msg">
+          <div class="ai-avatar">✨</div>
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>`;
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function hideTyping() {
+      const typing = document.getElementById('typing-msg');
+      if (typing) typing.remove();
+    }
+
+    function sendReply() {
+      const input = document.getElementById('reply-input');
+      const content = input.value.trim();
+      if (!content) return;
+
+      addMessage('user', content);
+      input.value = '';
+      updateSendButton();
+
+      showTyping();
+      setTimeout(() => {
+        hideTyping();
+        addMessage('ai', getRandomResponse());
+      }, 1200);
+    }
+
+    function updateSendButton() {
+      const content = document.getElementById('reply-input').value.trim();
+      document.getElementById('send-btn').disabled = !content;
+    }
+
+    function saveJournalEntry() {
+      const data = getData();
+      const content = document.getElementById('journal-input').value.trim() ||
+                      chatMessages.find(m => m.role === 'user')?.content || '';
+
+      if (!content) {
+        showToast('Please write something first');
+        return;
+      }
+
+      const entry = {
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        content,
+        mood: currentMood || 5,
+        energy: currentEnergy,
+        messages: chatMessages,
+        tags: extractTags(content)
+      };
+
+      data.entries.unshift(entry);
+
+      // Update streak
+      const today = new Date().toDateString();
+      if (data.user.lastJournalDate !== today) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (data.user.lastJournalDate === yesterday.toDateString()) {
+          data.user.streak++;
+        } else {
+          data.user.streak = 1;
+        }
+        data.user.lastJournalDate = today;
+      }
+
+      // Update mood history
+      data.moodHistory.push({ date: new Date().toISOString(), mood: currentMood || 5 });
+      if (data.moodHistory.length > 30) data.moodHistory.shift();
+
+      // Update Maslow scores based on mood
+      updateMaslowFromMood(data, currentMood || 5);
+
+      saveData(data);
+      closeJournalScreen();
+      renderAll();
+      showToast('Entry saved!');
+    }
+
+    function extractTags(content) {
+      const hashtags = content.match(/#(\w+)/g) || [];
+      return hashtags.map(t => t.substring(1).toLowerCase()).slice(0, 5);
+    }
+
+    function updateMaslowFromMood(data, mood) {
+      const impact = (mood - 5) * 0.5;
+      Object.keys(data.maslow).forEach(key => {
+        data.maslow[key] = Math.max(0, Math.min(100, data.maslow[key] + impact + (Math.random() - 0.5) * 2));
+      });
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ============================================
+    // Commitments
+    // ============================================
+
+    function openCommitmentModal() {
+      document.getElementById('commitment-modal').classList.add('active');
+      document.getElementById('commitment-title').value = '';
+    }
+
+    function closeCommitmentModal() {
+      document.getElementById('commitment-modal').classList.remove('active');
+    }
+
+    function addCommitment() {
+      const title = document.getElementById('commitment-title').value.trim();
+      if (!title) {
+        showToast('Please enter a title');
+        return;
+      }
+
+      const data = getData();
+      const commitment = {
+        id: Date.now().toString(),
+        title,
+        level: document.getElementById('commitment-level').value,
+        frequency: document.getElementById('commitment-frequency').value,
+        streak: 0,
+        successProbability: 0.5 + Math.random() * 0.3,
+        checkIns: [],
+        createdAt: new Date().toISOString()
+      };
+
+      data.commitments.push(commitment);
+      saveData(data);
+      closeCommitmentModal();
+      renderCommitments();
+      showToast('Commitment added!');
+    }
+
+    function toggleCommitment(id) {
+      const data = getData();
+      const commitment = data.commitments.find(c => c.id === id);
+      if (!commitment) return;
+
+      const today = new Date().toDateString();
+      const todayCheckIn = commitment.checkIns.find(c => new Date(c.date).toDateString() === today);
+
+      if (todayCheckIn) {
+        todayCheckIn.completed = !todayCheckIn.completed;
+      } else {
+        commitment.checkIns.push({ date: new Date().toISOString(), completed: true });
+      }
+
+      // Update streak
+      const completed = commitment.checkIns.filter(c => c.completed).length;
+      commitment.streak = completed;
+
+      // Update success probability (Bayesian update simulation)
+      const total = commitment.checkIns.length;
+      commitment.successProbability = (2 + completed) / (4 + total);
+
+      saveData(data);
+      renderCommitments();
+      renderHome();
+    }
+
+    // ============================================
+    // Rendering
+    // ============================================
+
+    function renderHome() {
+      const data = getData();
+
+      // Date
+      document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', {
+        weekday: 'long', month: 'long', day: 'numeric'
+      });
+
+      // Streak
+      document.getElementById('streak-count').textContent = data.user.streak;
+
+      // Wellbeing score
+      const scores = Object.values(data.maslow);
+      const wellbeing = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+      document.getElementById('wellbeing-score').textContent = wellbeing;
+
+      // Maslow pyramid
+      renderMaslowPyramid(data.maslow);
+
+      // Today's commitments
+      renderTodayCommitments(data.commitments);
+
+      // AI insight
+      document.getElementById('ai-insight').textContent = getRandomInsight();
+    }
+
+    function renderMaslowPyramid(scores) {
+      const levels = [
+        { key: 'self_actualization', name: 'self actualization', color: '#BA68C8' },
+        { key: 'esteem', name: 'esteem', color: '#64B5F6' },
+        { key: 'love_belonging', name: 'love & belonging', color: '#81C784' },
+        { key: 'safety', name: 'safety', color: '#FFB74D' },
+        { key: 'physiological', name: 'physiological', color: '#E57373' }
+      ];
+
+      const container = document.getElementById('maslow-pyramid');
+      container.innerHTML = levels.map((level, i) => {
+        const width = 100 - i * 12;
+        const score = Math.round(scores[level.key]);
+        const opacity = 0.3 + (score / 100) * 0.7;
+        return `
+          <div class="pyramid-row">
+            <div class="pyramid-bar" style="width: ${width}%; background: ${level.color}; opacity: ${opacity};">
+              <span>${level.name}</span>
+              <span>${score}%</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderTodayCommitments(commitments) {
+      const container = document.getElementById('today-commitments');
+      const today = new Date().toDateString();
+
+      if (commitments.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px;">No commitments yet. Add one to get started!</p>';
+        return;
+      }
+
+      container.innerHTML = commitments.slice(0, 3).map(c => {
+        const todayCheckIn = c.checkIns.find(ci => new Date(ci.date).toDateString() === today);
+        const completed = todayCheckIn?.completed || false;
+        return `
+          <div class="commitment-item" onclick="toggleCommitment('${c.id}')">
+            <div class="checkbox ${completed ? 'checked' : ''}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <span class="commitment-title ${completed ? 'completed' : ''}">${escapeHtml(c.title)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderJournalList() {
+      const data = getData();
+      const container = document.getElementById('journal-list');
+
+      if (data.entries.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 016.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"></path>
+            </svg>
+            <p class="empty-title">No entries yet</p>
+            <p>Start journaling to see your entries here</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = data.entries.map(entry => {
+        const date = new Date(entry.date);
+        const today = new Date();
+        let dateStr;
+        if (date.toDateString() === today.toDateString()) {
+          dateStr = 'Today, ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        } else {
+          dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        }
+
+        return `
+          <div class="journal-entry-card">
+            <div class="entry-header">
+              <div class="entry-meta">
+                <div class="entry-mood-dot" style="background: ${moodColors[entry.mood - 1]}"></div>
+                <span class="entry-date">${dateStr}</span>
+              </div>
+              ${entry.messages?.length > 0 ? '<span style="background: rgba(186, 104, 200, 0.15); padding: 4px 8px; border-radius: 8px;">✨</span>' : ''}
+            </div>
+            <p class="entry-preview">${escapeHtml(entry.content)}</p>
+            ${entry.tags?.length > 0 ? `
+              <div class="entry-tags">
+                ${entry.tags.map(t => `<span class="entry-tag">#${t}</span>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderCommitments() {
+      const data = getData();
+      const today = new Date().toDateString();
+
+      // Stats
+      const active = data.commitments.length;
+      const bestStreak = Math.max(...data.commitments.map(c => c.streak), 0);
+      const avgSuccess = active > 0
+        ? Math.round(data.commitments.reduce((sum, c) => sum + c.successProbability, 0) / active * 100)
+        : 0;
+
+      document.getElementById('active-count').textContent = active;
+      document.getElementById('best-streak').textContent = bestStreak;
+      document.getElementById('avg-success').textContent = avgSuccess + '%';
+      document.getElementById('commitment-subtitle').textContent =
+        `${data.commitments.filter(c => c.checkIns.some(ci => new Date(ci.date).toDateString() === today && ci.completed)).length}/${active} completed today`;
+
+      // List
+      const container = document.getElementById('commitment-list');
+      const levelColors = {
+        physiological: '#E57373',
+        safety: '#FFB74D',
+        love_belonging: '#81C784',
+        esteem: '#64B5F6',
+        self_actualization: '#BA68C8'
+      };
+
+      if (data.commitments.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <p class="empty-title">No commitments yet</p>
+            <p>Tap + to add your first commitment</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = data.commitments.map(c => {
+        const todayCheckIn = c.checkIns.find(ci => new Date(ci.date).toDateString() === today);
+        const completed = todayCheckIn?.completed || false;
+        const color = levelColors[c.level] || '#5b78f5';
+
+        return `
+          <div class="commitment-card">
+            <div class="commitment-header">
+              <div class="checkbox ${completed ? 'checked' : ''}" onclick="toggleCommitment('${c.id}')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <div class="commitment-info">
+                <h3 style="${completed ? 'color: var(--text-muted); text-decoration: line-through;' : ''}">${escapeHtml(c.title)}</h3>
+                <div class="commitment-meta">
+                  <div class="level-badge" style="background: ${color}20; color: ${color};">
+                    <span>●</span>
+                    <span>${c.level.replace('_', ' ')}</span>
+                  </div>
+                  <span class="frequency-text">${c.frequency}</span>
+                </div>
+              </div>
+              <div class="streak-tag">
+                <span>🔥</span>
+                <span>${c.streak}</span>
+              </div>
+            </div>
+            <div class="probability-container">
+              <span class="probability-label">Success likelihood</span>
+              <div class="probability-bar">
+                <div class="probability-fill" style="width: ${Math.round(c.successProbability * 100)}%;"></div>
+              </div>
+              <span class="probability-value">${Math.round(c.successProbability * 100)}%</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderInsights() {
+      const data = getData();
+
+      // Mood chart
+      const chartContainer = document.getElementById('mood-chart');
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const today = new Date().getDay();
+
+      // Generate mood data from history or random
+      const moodData = days.map((day, i) => {
+        const historyEntry = data.moodHistory[data.moodHistory.length - 7 + i];
+        return historyEntry?.mood || Math.floor(Math.random() * 4) + 5;
+      });
+
+      const avgMood = (moodData.reduce((a, b) => a + b, 0) / moodData.length).toFixed(1);
+      document.getElementById('mood-avg').textContent = `Average: ${avgMood}`;
+
+      chartContainer.innerHTML = moodData.map((mood, i) => {
+        const height = (mood / 10) * 100;
+        const isToday = i === (today === 0 ? 6 : today - 1);
+        return `
+          <div class="chart-bar-container">
+            <div class="chart-bar-wrapper">
+              <div class="chart-bar" style="height: ${height}px; background: ${isToday ? 'linear-gradient(180deg, #5b78f5, #4a5ce8)' : 'linear-gradient(180deg, #3d47d1, #303884)'}"></div>
+            </div>
+            <span class="chart-label ${isToday ? 'active' : ''}">${days[i]}</span>
+          </div>
+        `;
+      }).join('');
+
+      // Maslow trends
+      const trendContainer = document.getElementById('trend-list');
+      const levels = [
+        { key: 'physiological', name: 'physiological', color: '#E57373' },
+        { key: 'safety', name: 'safety', color: '#FFB74D' },
+        { key: 'love_belonging', name: 'love & belonging', color: '#81C784' },
+        { key: 'esteem', name: 'esteem', color: '#64B5F6' },
+        { key: 'self_actualization', name: 'self actualization', color: '#BA68C8' }
+      ];
+
+      trendContainer.innerHTML = levels.map(level => {
+        const score = Math.round(data.maslow[level.key]);
+        const change = Math.floor(Math.random() * 15) - 5;
+        const isPositive = change >= 0;
+
+        return `
+          <div class="trend-item">
+            <div class="trend-dot" style="background: ${level.color};"></div>
+            <span class="trend-label">${level.name}</span>
+            <div class="trend-score">
+              <span class="score-value">${score}</span>
+              <div class="change-indicator ${isPositive ? 'positive' : 'negative'}">
+                <span>${isPositive ? '↑' : '↓'}</span>
+                <span>${Math.abs(change)}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderProfile() {
+      const data = getData();
+      document.getElementById('user-name').textContent = data.user.name;
+      document.getElementById('total-entries').textContent = data.entries.length;
+      document.getElementById('profile-streak').textContent = data.user.streak;
+      document.getElementById('ai-personality').textContent =
+        data.user.aiPersonality.charAt(0).toUpperCase() + data.user.aiPersonality.slice(1);
+
+      const totalCheckIns = data.commitments.reduce((sum, c) => sum + c.checkIns.length, 0);
+      const completedCheckIns = data.commitments.reduce((sum, c) =>
+        sum + c.checkIns.filter(ci => ci.completed).length, 0);
+      const successRate = totalCheckIns > 0 ? Math.round(completedCheckIns / totalCheckIns * 100) : 0;
+      document.getElementById('profile-success').textContent = successRate + '%';
+    }
+
+    function renderAll() {
+      renderHome();
+      renderJournalList();
+      renderCommitments();
+      renderInsights();
+      renderProfile();
+    }
+
+    // ============================================
+    // Navigation
+    // ============================================
+
+    function switchTab(tabName) {
+      // Update nav
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.tab === tabName);
+      });
+
+      // Update screens
+      document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+      });
+      document.getElementById(`${tabName}-screen`).classList.add('active');
+
+      // Render content
+      if (tabName === 'journal') renderJournalList();
+      else if (tabName === 'commitments') renderCommitments();
+      else if (tabName === 'insights') renderInsights();
+      else if (tabName === 'profile') renderProfile();
+    }
+
+    // ============================================
+    // Utilities
+    // ============================================
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function changePersonality() {
+      const personalities = ['supportive', 'coach', 'curious', 'balanced'];
+      const data = getData();
+      const current = personalities.indexOf(data.user.aiPersonality);
+      data.user.aiPersonality = personalities[(current + 1) % personalities.length];
+      saveData(data);
+      renderProfile();
+      showToast(`AI personality set to ${data.user.aiPersonality}`);
+    }
+
+    function exportData() {
+      const data = getData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'enso-data.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Data exported!');
+    }
+
+    function clearAllData() {
+      if (confirm('Are you sure you want to delete all your data? This cannot be undone.')) {
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
+      }
+    }
+
+    // ============================================
+    // Event Listeners
+    // ============================================
+
+    document.getElementById('journal-input').addEventListener('input', updateStartButton);
+    document.getElementById('reply-input').addEventListener('input', updateSendButton);
+
+    // Auto-resize reply input
+    document.getElementById('reply-input').addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+    });
+
+    // Enter to send
+    document.getElementById('reply-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendReply();
+      }
+    });
+
+    // ============================================
+    // Initialize
+    // ============================================
+
+    renderAll();
+  </script>
+</body>
+</html>
